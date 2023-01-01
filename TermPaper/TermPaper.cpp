@@ -37,9 +37,13 @@ int DetermineTheRandomNumInMatrix() {
 }
 
 void SetARandomNumberInMatrix(int** matrix, int dimension) {
-	int rowAndColOfNum = rand() % (dimension * dimension) + 1;
-	rowAndColOfNum /= dimension;
-	matrix[rowAndColOfNum][rowAndColOfNum] = DetermineTheRandomNumInMatrix();
+	int row, col, randomNumber;
+	do {
+		randomNumber = rand() % (dimension * dimension);
+		row = randomNumber / dimension;
+		col = randomNumber % 4;
+	} while (matrix[row][col] != 0);
+	matrix[row][col] = DetermineTheRandomNumInMatrix();
 }
 
 void CalculatingScore(int** matrix, int dimension) {
@@ -49,7 +53,70 @@ void CalculatingScore(int** matrix, int dimension) {
 			score += matrix[row][col];
 		}
 	}
-	std::cout << "Score: " << score;
+	std::cout << "Score: " << score << '\n';
+}
+
+bool CheckForColumnWithZeros(int** matrix, int dimension, int col) {
+	for (int row = 0; row < dimension; row++) {
+		if (matrix[row][col] != 0)
+			return false;
+	}
+	return true;
+}
+
+void MovingNumbersUp(int** matrix, int dimension, int col) {
+	for (int counter = 0; counter < dimension - 1; counter++) {
+		for (int row = counter + 1; row > 0; row--) {
+			if (matrix[row - 1][col] == matrix[row][col] || matrix[row - 1][col] == 0) {
+				matrix[row - 1][col] += matrix[row][col];
+				matrix[row][col] = 0;
+			}
+			else {
+				break;
+			}
+		}
+	}
+}
+
+void MovingNumbersDown(int** matrix, int dimension, int col) {
+	for (int counter = dimension - 1; counter > 0; counter--) {
+		for (int row = counter - 1; row < dimension - 1; row++) {
+			if (matrix[row + 1][col] == matrix[row][col] || matrix[row + 1][col] == 0) {
+				matrix[row + 1][col] += matrix[row][col];
+				matrix[row][col] = 0;
+			}
+			else {
+				break;
+			}
+		}
+	}
+}
+
+void MovingNumbers(int** matrix, int dimension, char direction) {
+	if (direction == 'w') {
+		for (int col = 0; col < dimension; col++) {
+			if (CheckForColumnWithZeros(matrix, dimension, col))
+				continue;
+			MovingNumbersUp(matrix, dimension, col);
+		}
+	}
+	else if (direction == 's') {
+		for (int col = 0; col < dimension; col++) {
+			if (CheckForColumnWithZeros(matrix, dimension, col))
+				continue;
+			MovingNumbersDown(matrix, dimension, col);
+		}
+	}
+}
+
+bool AreThereZerosInMatrix(int** matrix, int dimension) {
+	for (int row = 0; row < dimension; row++) {
+		for (int col = 0; col < dimension; col++) {
+			if (matrix[row][col] == 0)
+				return true;
+		}
+	}
+	return false;
 }
 
 int main()
@@ -57,14 +124,14 @@ int main()
 	std::cout << "      MENU\n";
 	std::cout << "1. Start game\n" << "2. Leaderboard\n" << "3. Quit\n";
 	std::cout << "\nPlease enter a number to choose one of the options: ";
-	char nickname[50];
+	char nickname[NICKNAME_MAX_LETTERS];
 	int chosenOption;
 	std::cin >> chosenOption;
 	int matrixDimension;
 	if (chosenOption == 1) {
 		std::cout << "Please enter your nickname: ";
 		std::cin.ignore();
-		std::cin.getline(nickname, 50);
+		std::cin.getline(nickname, NICKNAME_MAX_LETTERS);
 		std::cout << "Enter a number for the dimension of the matrix: ";
 		std::cin >> matrixDimension;
 		while (matrixDimension < 4 || matrixDimension > 10) {
@@ -76,8 +143,15 @@ int main()
 		srand((unsigned)time(NULL));
 		matrix = InitializeMatrix(matrix, matrixDimension);
 		FillMatrixWithZeros(matrix, matrixDimension);
-		SetARandomNumberInMatrix(matrix, matrixDimension);
-		PrintMatrix(matrix, matrixDimension);
-		CalculatingScore(matrix, matrixDimension);
+		while (true) {
+			if (AreThereZerosInMatrix(matrix, matrixDimension))
+				SetARandomNumberInMatrix(matrix, matrixDimension);
+			PrintMatrix(matrix, matrixDimension);
+			CalculatingScore(matrix, matrixDimension);
+			std::cout << "Enter direction: ";
+			char direction;
+			std::cin >> direction;
+			MovingNumbers(matrix, matrixDimension, direction);
+		}
 	}
 }
