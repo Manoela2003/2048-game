@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <iostream>
-//#include <iomanip>
 
 int const NICKNAME_MAX_LETTERS = 50;
 int const SPACE_BETWEEN_NUMBERS = 6;
@@ -217,48 +216,67 @@ int IsChosenOptionValid(int chosenOption) {
 	return chosenOption;
 }
 
+void IsMatrixDimensionValid(int &dimension) {
+	while (dimension < 4 || dimension > 10) {
+		std::cout << "The dimension should be between 4 and 10!\n" << "Please enter new number: ";
+		std::cin >> dimension;
+	}
+}
+
+void DeletingDynamicMemory(int** matrix, int dimension) {
+	for (int col = 0; col < dimension; col++) {
+		delete matrix[col];
+	}
+	delete[] matrix;
+}
+
+void StartingGame(char* nickname, int matrixDimension) {
+	std::cout << "Please enter your nickname: ";
+	std::cin.ignore();
+	std::cin.getline(nickname, NICKNAME_MAX_LETTERS);
+	std::cout << "Enter a number for the dimension of the matrix: ";
+	std::cin >> matrixDimension;
+	IsMatrixDimensionValid(matrixDimension);
+	system("cls");
+	int** matrix{};
+	srand((unsigned)time(NULL));
+	matrix = InitializeMatrix(matrix, matrixDimension);
+	FillMatrixWithZeros(matrix, matrixDimension);
+	while (true) {
+		if (AreThereZerosInMatrix(matrix, matrixDimension))
+			SetARandomNumberInMatrix(matrix, matrixDimension);
+		PrintMatrix(matrix, matrixDimension);
+		std::cout << "Score: ";
+		CalculatingScore(matrix, matrixDimension);
+		if (!AreTherePossibleMoves(matrix, matrixDimension)) {
+			std::cout << "There are no more possible moves!\n";
+			std::cout << "Your result is: ";
+			CalculatingScore(matrix, matrixDimension);
+			break;
+		}
+		std::cout << "Enter direction: ";
+		char direction;
+		std::cin >> direction;
+		MovingNumbers(matrix, matrixDimension, direction);
+	}
+	DeletingDynamicMemory(matrix, matrixDimension);
+}
+
 int main()
 {
 	int chosenOption;
 	do {
-		std::cout << "      MENU\n";
-		std::cout << "1. Start game\n" << "2. Leaderboard\n" << "3. Quit\n";
+		std::cout << "      MENU     " << '\n';
+		std::cout << "1. Start game\n";
+		std::cout << "2. Leaderboard\n";
+		std::cout << "3. Quit\n";
 		std::cout << "\nPlease enter a number to choose one of the options: ";
 		char nickname[NICKNAME_MAX_LETTERS];
 		std::cin >> chosenOption;
 		chosenOption = IsChosenOptionValid(chosenOption);
-		int matrixDimension;
+		int matrixDimension = 0;
 		if (chosenOption == 1) {
-			std::cout << "Please enter your nickname: ";
-			std::cin.ignore();
-			std::cin.getline(nickname, NICKNAME_MAX_LETTERS);
-			std::cout << "Enter a number for the dimension of the matrix: ";
-			std::cin >> matrixDimension;
-			while (matrixDimension < 4 || matrixDimension > 10) {
-				std::cout << "The dimension should be between 4 and 10!\n" << "Please enter new number: ";
-				std::cin >> matrixDimension;
-			}
-			system("cls");
-			int** matrix{};
-			srand((unsigned)time(NULL));
-			matrix = InitializeMatrix(matrix, matrixDimension);
-			FillMatrixWithZeros(matrix, matrixDimension);
-			while (true) {
-				if (AreThereZerosInMatrix(matrix, matrixDimension))
-					SetARandomNumberInMatrix(matrix, matrixDimension);
-				else if (!AreTherePossibleMoves(matrix, matrixDimension)) {
-					std::cout << "There are no more possible moves!\n";
-					std::cout << "Your result is: ";
-					CalculatingScore(matrix, matrixDimension);
-				}
-				PrintMatrix(matrix, matrixDimension);
-				std::cout << "Score: ";
-				CalculatingScore(matrix, matrixDimension);
-				std::cout << "Enter direction: ";
-				char direction;
-				std::cin >> direction;
-				MovingNumbers(matrix, matrixDimension, direction);
-			}
+			StartingGame(nickname, matrixDimension);
 		}
 		else if (chosenOption == 2) {
 
