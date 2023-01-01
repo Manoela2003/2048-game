@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <iostream>
-#include <iomanip>
+//#include <iomanip>
 
 int const NICKNAME_MAX_LETTERS = 50;
+int const SPACE_BETWEEN_NUMBERS = 6;
 
 int** InitializeMatrix(int** matrix, int dimension) {
 	matrix = new int* [dimension];
@@ -12,10 +13,34 @@ int** InitializeMatrix(int** matrix, int dimension) {
 	return matrix;
 }
 
+//int FindLongestNumber(int** matrix, int dimension) {
+//	int longestNumber = 0;
+//	for (int row = 0; row < dimension; row++) {
+//		for (int col = 0; col < dimension; col++)
+//			if (matrix[row][col] > longestNumber)
+//				longestNumber = matrix[row][col];
+//	}
+//	return longestNumber;
+//}
+//
+
+int LengthOfNumber(int number) {
+	int length = 0;
+	while (number > 9) {
+		number /= 10;
+		length++;
+	}
+	return length;
+}
+
 void PrintMatrix(int** matrix, int dimension) {
 	for (int row = 0; row < dimension; row++) {
 		for (int col = 0; col < dimension; col++) {
-			std::cout << matrix[row][col] << std::setw(7);
+			std::cout << matrix[row][col];
+			int length = LengthOfNumber(matrix[row][col]);
+			for (int space = 0; space < SPACE_BETWEEN_NUMBERS - length; space++) {
+				std::cout << " ";
+			}
 		}
 		std::cout << "\n\n";
 	}
