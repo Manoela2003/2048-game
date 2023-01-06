@@ -351,7 +351,7 @@ int CountOfSpacesInNickname(char* nickname) {
 	return spaces;
 }
 
-int ReadHighScoreFromFile(char* line, char * nickname) {
+int ReadHighScoreFromFile(char* line, char* nickname) {
 	char highScore[10];
 	int scoreIndex = 0;
 	int nicknameSpaces = CountOfSpacesInNickname(nickname);
@@ -384,7 +384,6 @@ void AddingLineToFile(std::fstream& leaderboard, char* lineToBeAdded) {
 	for (int i = 0; lineToBeAdded[i] != '\0' && lineToBeAdded[i] >= 0; i++) {
 		leaderboard << lineToBeAdded[i];
 	}
-	leaderboard << '\n';
 }
 
 void CheckingIfScoreIsHigherThanThoseInLeaderboard(int currScore, char* nickname, int dimension) {
@@ -420,14 +419,16 @@ void CheckingIfScoreIsHigherThanThoseInLeaderboard(int currScore, char* nickname
 			oldLeaderboard[indexOfLineWithLowerScore] = EmptyChar(oldLeaderboard[indexOfLineWithLowerScore]);
 			AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, indexOfLineWithLowerScore);
 		}
-		leaderboard.open(fileName, std::ostream::out);
+		leaderboard.open(fileName, std::ofstream::out);
 		if (leaderboard.is_open() == false) {
 			std::cout << "Failed to open the file.\n";
 			return;
 		}
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 4; i++) {
 			AddingLineToFile(leaderboard, oldLeaderboard[i]);
+			leaderboard << '\n';
 		}
+		AddingLineToFile(leaderboard, oldLeaderboard[4]);
 		leaderboard.close();
 	}
 	else {
@@ -476,7 +477,7 @@ void StartingGame(char* nickname, int matrixDimension) {
 		std::cout << "Score: " << score << '\n';
 		if (!AreTherePossibleMoves(matrix, matrixDimension)) {
 			std::cout << "There are no more possible moves!\n";
-			std::cout << "Your result is: " << score;
+			std::cout << "Your result is: " << score << '\n';
 			break;
 		}
 		std::cout << "Enter direction: ";
@@ -488,8 +489,29 @@ void StartingGame(char* nickname, int matrixDimension) {
 	DeletingDynamicMemory(matrix, matrixDimension);
 }
 
+char* ReadNickname(char* line, int& indexOfLastSpace) {
+	indexOfLastSpace = 2; //skips the position in the ranking and the space after it
+	for (indexOfLastSpace; line[indexOfLastSpace] != 0 && line[indexOfLastSpace]; indexOfLastSpace++); // finds the last symbol in the line
+	for (indexOfLastSpace; line[indexOfLastSpace] != ' '; indexOfLastSpace--); // finds the space after the nickname
+	char nickname[NICKNAME_MAX_LETTERS];
+	for (int i = 2; i < indexOfLastSpace; i++) {
+		nickname[i - 2] = line[i];
+	}
+	return nickname;
+}
+
+void PrintNickname(char* nickname) {
+	for (int i = 0; nickname[i] != '\0' && nickname[i] >= 0; i++)
+		std::cout << nickname[i];
+}
+
+void PrintScore(char* line, int indexOfLastSpace) {
+	for (int i = indexOfLastSpace + 1; line[i] != '\0' && line[i] >= 0; i++)
+		std::cout << line[i];
+}
+
 void Leaderboard() {
-	std::fstream leaderboardFile;
+	std::ifstream leaderboardFile;
 	std::cout << "Choose dimension you want to see the leaderboard for: ";
 	int dimension;
 	std::cin >> dimension;
@@ -497,16 +519,21 @@ void Leaderboard() {
 	IsMatrixDimensionValid(dimension);
 	char fileName[10];
 	CreateFileName(fileName, dimension);
-	leaderboardFile.open(fileName, std::ifstream::in);
+	leaderboardFile.open(fileName);
 	if (leaderboardFile.is_open() == false) {
 		std::cout << "Failed to open the file.\n";
 		return;
 	}
 	std::cout << "The " << dimension << "x" << dimension << " leaderboard: \n";
-	int positioninranking, score;
-	char nickname[NICKNAME_MAX_LETTERS];
-	while (leaderboardFile >> positioninranking >> nickname >> score) {
-		std::cout << positioninranking << " " << nickname << " " << score << '\n';
+	char line[FILE_LINE_MAX_SIZE];
+	while (leaderboardFile.getline(line, FILE_LINE_MAX_SIZE)) {
+		int indexOfLastSpace = 0;
+		std::cout << line[0] << ". ";
+		char* nickname = ReadNickname(line, indexOfLastSpace);
+		PrintNickname(nickname);
+		std::cout << ' ';
+		PrintScore(line, indexOfLastSpace);
+		std::cout << '\n';
 	}
 	leaderboardFile.close();
 	std::cout << '\n';
