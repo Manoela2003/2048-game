@@ -222,12 +222,11 @@ bool AreTherePossibleMoves(int** matrix, int dimension) {
 	return false;
 }
 
-int IsChosenOptionValid(int chosenOption) {
-	while (!(chosenOption == 1 || chosenOption == 2 || chosenOption == 3)) {
+void IsChosenOptionValid(char* chosenOption) {
+	while (!(chosenOption[0] >= '1' && chosenOption[0] <= '3') || chosenOption[1] != '\0') {
 		std::cout << "That is not a valid option! Please choose again: ";
 		std::cin >> chosenOption;
 	}
-	return chosenOption;
 }
 
 void IsMatrixDimensionValid(char* dimension) {
@@ -259,26 +258,6 @@ void CreateFileName(char* fileName, char* dimension) {
 		fileName[index++] = txt[i];
 	}
 	fileName[index] = '\0';
-}
-
-bool HasLeaderboardFivePeople(char* dimension) {
-	std::fstream leaderboard;
-	char fileName[10];
-	CreateFileName(fileName, dimension);
-	leaderboard.open(fileName, std::ios::in);
-	if (leaderboard.is_open() == false) {
-		std::cout << "Failed to open the file.\n";
-		return false;
-	}
-	int placeOfRanking = 0;
-	char line[FILE_LINE_MAX_SIZE];
-	while (leaderboard.getline(line, FILE_LINE_MAX_SIZE)) {
-		placeOfRanking = line[0] - '0';
-	}
-	leaderboard.close();
-	if (placeOfRanking == 5)
-		return true;
-	return false;
 }
 
 void CopyFileLine(char** oldLeaderboard, char* line, int rowIndex) {
@@ -370,58 +349,57 @@ void AddingLineToFile(std::fstream& leaderboard, char* lineToBeAdded) {
 
 void CongratulatePlayer(int positionInRanking, int score) {
 	std::cout << "Congratulations! You climbed the leaderboard!\n";
-	std::cout << "You are now position " << positionInRanking << " in the leaderboard with " << score << " score\n";
+	std::cout << "You are now position " << positionInRanking << " in the leaderboard with " << score << " score\n\n";
 }
 
-void CheckingIfScoreIsHigherThanLeaderboard(int currScore, char* nickname, int dimension) {
+void CheckingIfScoreIsHigherThanLeaderboard(int currScore, char* nickname, char* dimension) {
 	std::fstream leaderboard;
 	char fileName[10];
 	CreateFileName(fileName, dimension);
-	if (HasLeaderboardFivePeople(dimension)) {
-		int positionInRanking, highScore;
-		char currNickname[NICKNAME_MAX_LETTERS];
-		leaderboard.open(fileName, std::ifstream::in);
-		if (leaderboard.is_open() == false) {
-			std::cout << "Failed to open the file.\n";
-			return;
-		}
-		char** oldLeaderboard{};
-		oldLeaderboard = InitializeCharMatrix(oldLeaderboard, 5, FILE_LINE_MAX_SIZE);
-		char line[FILE_LINE_MAX_SIZE];
-		int rowIndex = 0, indexOfLineWithLowerScore = 5;
-		while (leaderboard.getline(line, FILE_LINE_MAX_SIZE)) {
-			CopyFileLine(oldLeaderboard, line, rowIndex);
-			rowIndex++;
-			if (currScore > ReadHighScoreFromFile(line, nickname) && indexOfLineWithLowerScore == 5) {
-				indexOfLineWithLowerScore = line[0] - '0' - 1;
-			}
-		}
-		leaderboard.close();
-		if (indexOfLineWithLowerScore != 5) {
-			for (int row = 4; row >= indexOfLineWithLowerScore; row--) {
-				oldLeaderboard[row][0] = int(row + 2 + '0'); // changes the position of the ranking
-				oldLeaderboard[row + 1] = EmptyChar(oldLeaderboard[row + 1]);
-				CopyFileLine(oldLeaderboard, oldLeaderboard[row], row + 1);
-			}
-			oldLeaderboard[indexOfLineWithLowerScore] = EmptyChar(oldLeaderboard[indexOfLineWithLowerScore]);
-			AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, indexOfLineWithLowerScore);
-			CongratulatePlayer(indexOfLineWithLowerScore + 1, currScore);
-		}
-		leaderboard.open(fileName, std::ofstream::out);
-		if (leaderboard.is_open() == false) {
-			std::cout << "Failed to open the file.\n";
-			return;
-		}
-		for (int i = 0; i < 4; i++) {
-			AddingLineToFile(leaderboard, oldLeaderboard[i]);
-			leaderboard << '\n';
-		}
-		AddingLineToFile(leaderboard, oldLeaderboard[4]);
-		leaderboard.close();
+	int positionInRanking, highScore;
+	char currNickname[NICKNAME_MAX_LETTERS];
+	leaderboard.open(fileName, std::ifstream::in);
+	if (leaderboard.is_open() == false) {
+		std::cout << "Failed to open the file.\n";
+		return;
 	}
-	else {
-
+	char** oldLeaderboard{};
+	oldLeaderboard = InitializeCharMatrix(oldLeaderboard, 5, FILE_LINE_MAX_SIZE);
+	char line[FILE_LINE_MAX_SIZE];
+	int countOfRows = 0, indexOfLineWithLowerScore = 5;
+	while (leaderboard.getline(line, FILE_LINE_MAX_SIZE)) {
+		CopyFileLine(oldLeaderboard, line, countOfRows);
+		countOfRows++;
+		if (currScore > ReadHighScoreFromFile(line, nickname) && indexOfLineWithLowerScore == 5) {
+			indexOfLineWithLowerScore = line[0] - '0' - 1;
+		}
 	}
+	leaderboard.close();
+	if (indexOfLineWithLowerScore != 5 && countOfRows == 5) {
+		for (int row = countOfRows - 1; row >= indexOfLineWithLowerScore; row--) {
+			oldLeaderboard[row][0] = int(row + 2 + '0'); // changes the position of the ranking
+			oldLeaderboard[row + 1] = EmptyChar(oldLeaderboard[row + 1]);
+			CopyFileLine(oldLeaderboard, oldLeaderboard[row], row + 1);
+		}
+		oldLeaderboard[indexOfLineWithLowerScore] = EmptyChar(oldLeaderboard[indexOfLineWithLowerScore]);
+		AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, indexOfLineWithLowerScore);
+		CongratulatePlayer(indexOfLineWithLowerScore + 1, currScore);
+	}
+	else if (countOfRows != 5) {
+		AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, countOfRows);
+		CongratulatePlayer(countOfRows + 1, currScore);
+	}
+	leaderboard.open(fileName, std::ofstream::out);
+	if (leaderboard.is_open() == false) {
+		std::cout << "Failed to open the file.\n";
+		return;
+	}
+	for (int i = 0; i < countOfRows; i++) {
+		AddingLineToFile(leaderboard, oldLeaderboard[i]);
+		leaderboard << '\n';
+	}
+	AddingLineToFile(leaderboard, oldLeaderboard[countOfRows]);
+	leaderboard.close();
 }
 
 bool IsNicknameValid(char* nickname) {
@@ -478,7 +456,7 @@ void StartingGame(char* nickname, char* matrixDimension) {
 		std::cin >> direction;
 		MovingNumbers(matrix, dimension, direction);
 	}
-	CheckingIfScoreIsHigherThanLeaderboard(score, nickname, dimension);
+	CheckingIfScoreIsHigherThanLeaderboard(score, nickname, matrixDimension);
 	DeletingDynamicMemory(matrix, dimension);
 }
 
@@ -517,7 +495,9 @@ void Leaderboard() {
 	}
 	std::cout << "The " << dimension << "x" << dimension << " leaderboard: \n\n";
 	char line[FILE_LINE_MAX_SIZE];
+	bool isLeaderboardEmpty = true;
 	while (leaderboardFile.getline(line, FILE_LINE_MAX_SIZE)) {
+		isLeaderboardEmpty = false;
 		int indexOfLastSpace = 0;
 		std::cout << line[0] << ". ";
 		char* nickname = ReadNickname(line, indexOfLastSpace);
@@ -526,13 +506,16 @@ void Leaderboard() {
 		PrintScore(line, indexOfLastSpace);
 		std::cout << '\n';
 	}
+	if (isLeaderboardEmpty) {
+		std::cout << "There are no highscores!\n";
+	}
 	leaderboardFile.close();
 	std::cout << '\n';
 }
 
 int main()
 {
-	int chosenOption;
+	char chosenOption[2];
 	do {
 		std::cout << "      MENU     " << '\n';
 		std::cout << "1. Start game\n";
@@ -541,13 +524,14 @@ int main()
 		std::cout << "\nPlease enter a number to choose one of the options: ";
 		char nickname[NICKNAME_MAX_LETTERS];
 		std::cin >> chosenOption;
-		chosenOption = IsChosenOptionValid(chosenOption);
+		IsChosenOptionValid(chosenOption);
 		char matrixDimension[2];
-		if (chosenOption == 1) {
+		if (chosenOption[0] == '1') {
 			StartingGame(nickname, matrixDimension);
 		}
-		else if (chosenOption == 2) {
+		else if (chosenOption[0] == '2') {
 			Leaderboard();
 		}
-	} while (chosenOption != 3);
+	} while (chosenOption[0] != '3');
+	std::cout << "Goodbye!";
 }
