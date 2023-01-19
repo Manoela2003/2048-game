@@ -393,21 +393,12 @@ void CheckForHighscore(int currScore, char* nickname, char* dimension, int const
 	leaderboard.close();
 }
 
-bool IsNicknameValid(char* nickname, int const NICKNAME_MAX_LETTERS) {
-	for (int i = 0; i < NICKNAME_MAX_LETTERS - 1; i++) {
-		if (nickname[i] == '\0')
-		{
-			return true;
-		}
+void IsNicknameValid(char* nickname, int const NICKNAME_MAX_LETTERS) {
+	while (nickname[50] > 0) {
+		std::cout << "The nickname should be max 50 symbols! Please enter new one: ";
+		nickname = EmptyChar(nickname);
+		std::cin.getline(nickname, NICKNAME_MAX_LETTERS);
 	}
-	std::cout << "The nickname should be max 50 symbols!\n";
-	return false;
-	//while (isValid == false) {
-	//	std::cout << "The nickname should be max 50 symbols!\n";
-	//	std::cout << "Please enter a new one: " << std::endl;
-	//	std::cin.ignore();
-	//	IsNicknameValid(nickname);
-	//}
 }
 
 void IsDirectionValid(char* direction) {
@@ -445,9 +436,7 @@ void StartGame(char* nickname, char* matrixDimension, int const NICKNAME_MAX_LET
 	std::cout << "Please enter your nickname: ";
 	std::cin.ignore();
 	std::cin.getline(nickname, NICKNAME_MAX_LETTERS);
-	while (!IsNicknameValid(nickname, NICKNAME_MAX_LETTERS)) {
-		std::cin.getline(nickname, NICKNAME_MAX_LETTERS);// Fix the cin!
-	}
+	IsNicknameValid(nickname, NICKNAME_MAX_LETTERS);
 	std::cout << "Enter a number for the dimension of the matrix: ";
 	std::cin >> matrixDimension;
 	IsMatrixDimensionValid(matrixDimension);
@@ -500,7 +489,7 @@ void PrintLeaderboard(int const FILE_LINE_MAX_SIZE) {
 
 int main()
 {
-	int const NICKNAME_MAX_LETTERS = 51;
+	int const NICKNAME_MAX_LETTERS = 100;
 	int const SPACE_BETWEEN_NUMBERS = 6;
 	int const FILENAME_MAX_SIZE = 10;
 	int const FILE_LINE_MAX_SIZE = 70;
