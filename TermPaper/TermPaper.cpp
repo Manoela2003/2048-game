@@ -1,3 +1,17 @@
+/**
+*
+* Solution to course project # 4
+* Introduction to programming course
+* Faculty of Mathematics and Informatics of Sofia University
+* Winter semester 2022/2023
+*
+* @author Manoela Barakova
+* @idnumber 5MI0600271 @compiler VC
+*
+* Executing the 2048 game
+*
+*/
+
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
@@ -249,14 +263,12 @@ void CopyFileLine(char** oldLeaderboard, char* line, int rowIndex) {
 	}
 }
 
-char* NumberToChar(int number) {
-	char score[10];
+void NumberToChar(int number, char* score) {
 	int lengthOfNum = LengthOfSymbolsInNumber(number);
 	for (int index = lengthOfNum; index >= 0; index--) {
 		score[index] = number % 10 + '0';
 		number /= 10;
 	}
-	return score;
 }
 
 void AddNewScoreToTheLeaderboard(char** leaderboard, int score, char* nickname, int position) {
@@ -267,7 +279,8 @@ void AddNewScoreToTheLeaderboard(char** leaderboard, int score, char* nickname, 
 		leaderboard[position][index++] = nickname[i];
 	}
 	leaderboard[position][index++] = ' ';
-	char* charScore = NumberToChar(score);
+	char charScore[10];
+	NumberToChar(score, charScore);
 	for (int i = 0; charScore[i] >= '0'; i++) {
 		leaderboard[position][index++] = charScore[i];
 	}
@@ -276,7 +289,7 @@ void AddNewScoreToTheLeaderboard(char** leaderboard, int score, char* nickname, 
 int LengthOfChar(char score[10]) {
 	int length = 0;
 	while (score[length++] >= '0');
-	return length;
+	return length - 1;
 }
 
 int Pow(int base, int power) {
@@ -299,7 +312,7 @@ int TransformCharToNumber(char score[10]) {
 }
 
 void FindIndexOfLastSpace(int& indexOfLastSpace, char* line) {
-	for (indexOfLastSpace; line[indexOfLastSpace] >= 0; indexOfLastSpace++); // finds the last symbol in the line
+	for (indexOfLastSpace; line[indexOfLastSpace] > 0; indexOfLastSpace++); // finds the last symbol in the line
 	for (indexOfLastSpace; line[indexOfLastSpace] != ' '; indexOfLastSpace--); // finds the space after the nickname
 }
 
@@ -336,13 +349,14 @@ void CheckForLowerThanCurrScore(std::fstream& leaderboard, char* line, char** ol
 	while (leaderboard.getline(line, FILE_LINE_MAX_SIZE)) {
 		CopyFileLine(oldLeaderboard, line, countOfRows);
 		countOfRows++;
-		if (currScore > ReadHighScoreFromFile(line, nickname) && indexOfLineWithLowerScore == 5) {
+		int fileScore = ReadHighScoreFromFile(line, nickname);
+		if (currScore > fileScore && indexOfLineWithLowerScore == 5) {
 			indexOfLineWithLowerScore = line[0] - '0' - 1;
 		}
 	}
 }
 
-void RearangeScoresInLeaderboard(int countOfRows, int indexOfLineWithLowerScore, char** oldLeaderboard, int currScore, char* nickname) {
+void RearangeScoresInLeaderboard(int& countOfRows, int indexOfLineWithLowerScore, char** oldLeaderboard, int currScore, char* nickname) {
 	for (int row = countOfRows - 1; row >= indexOfLineWithLowerScore; row--) {
 		oldLeaderboard[row][0] = int(row + 2 + '0'); // changes the position of the ranking
 		oldLeaderboard[row + 1] = EmptyChar(oldLeaderboard[row + 1]);
@@ -351,9 +365,12 @@ void RearangeScoresInLeaderboard(int countOfRows, int indexOfLineWithLowerScore,
 	oldLeaderboard[indexOfLineWithLowerScore] = EmptyChar(oldLeaderboard[indexOfLineWithLowerScore]);
 	AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, indexOfLineWithLowerScore);
 	CongratulatePlayer(indexOfLineWithLowerScore + 1, currScore, nickname);
+	if (countOfRows < 5) {
+		countOfRows++;
+	}
 }
 
-void IsFileOpened(std::fstream &file) {
+void IsFileOpened(std::fstream& file) {
 	if (file.is_open() == false) {
 		std::cout << "Failed to open the file.\n";
 		exit(0);
@@ -364,31 +381,39 @@ void CheckForHighscore(int currScore, char* nickname, char* dimension, int const
 	std::fstream leaderboard;
 	char fileName[10];
 	CreateFileName(fileName, dimension);
-	int positionInRanking, highScore;
-	char * currNickname = new char[NICKNAME_MAX_LETTERS];
-	leaderboard.open(fileName, std::ios::in);
+	int positionInRanking = 0;
+	int highScore = 0;
+	char* currNickname = new char[NICKNAME_MAX_LETTERS];
+	leaderboard.open(fileName, std::fstream::in);
 	IsFileOpened(leaderboard);
 	char** oldLeaderboard{};
 	oldLeaderboard = InitializeCharMatrix(oldLeaderboard, 5, FILE_LINE_MAX_SIZE);
-	char *line = new char[FILE_LINE_MAX_SIZE];
+	char* line = new char[FILE_LINE_MAX_SIZE];
 	int countOfRows = 0, indexOfLineWithLowerScore = 5;
 	CheckForLowerThanCurrScore(leaderboard, line, oldLeaderboard, countOfRows, currScore, nickname, indexOfLineWithLowerScore, FILE_LINE_MAX_SIZE);
 	leaderboard.close();
-	if (indexOfLineWithLowerScore != 5 && countOfRows == 5) {
+	bool hasLeaderboardChanged = false;
+	if (indexOfLineWithLowerScore != 5) {
 		RearangeScoresInLeaderboard(countOfRows, indexOfLineWithLowerScore, oldLeaderboard, currScore, nickname);
+		hasLeaderboardChanged = true;
 	}
 	else if (countOfRows != 5) {
 		AddNewScoreToTheLeaderboard(oldLeaderboard, currScore, nickname, countOfRows);
 		CongratulatePlayer(countOfRows + 1, currScore, nickname);
 		countOfRows++;
+		hasLeaderboardChanged = true;
 	}
-	leaderboard.open(fileName, std::ios::out);
-	IsFileOpened(leaderboard);
-	for (int i = 0; i < countOfRows; i++) {
-		AddingLineToFile(leaderboard, oldLeaderboard[i]);
-		leaderboard << '\n';
+	if (hasLeaderboardChanged)
+	{
+		leaderboard.open(fileName, std::fstream::out);
+		IsFileOpened(leaderboard);
+		for (int i = 0; i < countOfRows; i++) {
+			AddingLineToFile(leaderboard, oldLeaderboard[i]);
+			if (i != countOfRows - 1) {
+				leaderboard << '\n';
+			}
+		}
 	}
-	AddingLineToFile(leaderboard, oldLeaderboard[countOfRows]);
 	delete[] currNickname, line;
 	leaderboard.close();
 }
@@ -505,7 +530,7 @@ int main()
 		IsChosenOptionValid(chosenOption);
 		char matrixDimension[2];
 		if (chosenOption[0] == '1') {
-			StartGame(nickname, matrixDimension, NICKNAME_MAX_LETTERS, FILENAME_MAX_SIZE, SPACE_BETWEEN_NUMBERS);
+			StartGame(nickname, matrixDimension, NICKNAME_MAX_LETTERS, FILE_LINE_MAX_SIZE, SPACE_BETWEEN_NUMBERS);
 		}
 		else if (chosenOption[0] == '2') {
 			PrintLeaderboard(FILE_LINE_MAX_SIZE);
