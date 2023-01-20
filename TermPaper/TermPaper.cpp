@@ -18,9 +18,9 @@
 #include <limits>
 
 char** InitializeCharMatrix(char** matrix, int rows, int cols) {
-	matrix = new char* [cols];
-	for (int col = 0; col < cols; col++) {
-		matrix[col] = new char[rows];
+	matrix = new char* [rows];
+	for (int row = 0; row < rows; row++) {
+		matrix[row] = new char[cols];
 	}
 	return matrix;
 }
@@ -234,11 +234,18 @@ void IsMatrixDimensionValid(char* dimension) {
 	}
 }
 
-void DeleteDynamicMemory(int** matrix, int dimension) {
+void DeleteDynamicMemoryOfInt(int** matrix, int dimension) {
 	for (int col = 0; col < dimension; col++) {
 		delete matrix[col];
 	}
 	delete[] matrix;
+}
+
+void DeleteDynamicMemoryOfChar(char** oldLeaderboard, int rows) {
+	for (int row = 0; row < rows; row++) {
+		delete[] oldLeaderboard[row];
+	}
+	delete[] oldLeaderboard;
 }
 
 void CreateFileName(char* fileName, char* dimension) {
@@ -377,6 +384,24 @@ void IsFileOpened(std::fstream& file) {
 	}
 }
 
+void SetDefaultValue(char** leaderboard, int const FILE_LINE_MAX_SIZE) {
+	for (int i = 0; i < 5; i++) {
+		for (int j = 0; j < FILE_LINE_MAX_SIZE; j++)
+			leaderboard[i][j] = '\0';
+	}
+}
+
+void RenewLeaderboard(std::fstream& leaderboard, char* fileName, int countOfRows, char** oldLeaderboard) {
+	leaderboard.open(fileName, std::fstream::out);
+	IsFileOpened(leaderboard);
+	for (int i = 0; i < countOfRows; i++) {
+		AddingLineToFile(leaderboard, oldLeaderboard[i]);
+		if (i != countOfRows - 1) {
+			leaderboard << '\n';
+		}
+	}
+}
+
 void CheckForHighscore(int currScore, char* nickname, char* dimension, int const NICKNAME_MAX_LETTERS, int const FILE_LINE_MAX_SIZE) {
 	std::fstream leaderboard;
 	char fileName[10];
@@ -388,6 +413,7 @@ void CheckForHighscore(int currScore, char* nickname, char* dimension, int const
 	IsFileOpened(leaderboard);
 	char** oldLeaderboard{};
 	oldLeaderboard = InitializeCharMatrix(oldLeaderboard, 5, FILE_LINE_MAX_SIZE);
+	SetDefaultValue(oldLeaderboard, FILE_LINE_MAX_SIZE);
 	char* line = new char[FILE_LINE_MAX_SIZE];
 	int countOfRows = 0, indexOfLineWithLowerScore = 5;
 	CheckForLowerThanCurrScore(leaderboard, line, oldLeaderboard, countOfRows, currScore, nickname, indexOfLineWithLowerScore, FILE_LINE_MAX_SIZE);
@@ -405,16 +431,10 @@ void CheckForHighscore(int currScore, char* nickname, char* dimension, int const
 	}
 	if (hasLeaderboardChanged)
 	{
-		leaderboard.open(fileName, std::fstream::out);
-		IsFileOpened(leaderboard);
-		for (int i = 0; i < countOfRows; i++) {
-			AddingLineToFile(leaderboard, oldLeaderboard[i]);
-			if (i != countOfRows - 1) {
-				leaderboard << '\n';
-			}
-		}
+		RenewLeaderboard(leaderboard, fileName, countOfRows, oldLeaderboard);
 	}
 	delete[] currNickname, line;
+	DeleteDynamicMemoryOfChar(oldLeaderboard, 5);
 	leaderboard.close();
 }
 
@@ -439,6 +459,7 @@ void ExecutingGame(int** matrix, int dimension, int& score, int SPACE_BETWEEN_NU
 	while (true) {
 		if (AreThereZerosInMatrix(matrix, dimension))
 			PlaceRandomNumberInMatrix(matrix, dimension);
+		std::cout << "\033[H\033[J";
 		PrintMatrix(matrix, dimension, SPACE_BETWEEN_NUMBERS);
 		score = CalculateScore(matrix, dimension);
 		std::cout << "Score: " << score << '\n';
@@ -470,7 +491,7 @@ void StartGame(char* nickname, char* matrixDimension, int const NICKNAME_MAX_LET
 		dimension *= 10;
 		dimension += matrixDimension[1] - '0';
 	}
-	system("cls");
+	std::cout << "\033[H\033[J";
 	int** matrix{};
 	srand((unsigned)time(NULL));
 	matrix = InitializeIntMatrix(matrix, dimension);
@@ -478,7 +499,7 @@ void StartGame(char* nickname, char* matrixDimension, int const NICKNAME_MAX_LET
 	int score = 0;
 	ExecutingGame(matrix, dimension, score, SPACE_BETWEEN_NUMBERS);
 	CheckForHighscore(score, nickname, matrixDimension, NICKNAME_MAX_LETTERS, FILE_LINE_MAX_SIZE);
-	DeleteDynamicMemory(matrix, dimension);
+	DeleteDynamicMemoryOfInt(matrix, dimension);
 }
 
 void PrintLineOfLeaderboard(std::fstream& leaderboardFile, char* line, bool& isLeaderboardEmpty, int const FILE_LINE_MAX_SIZE) {
@@ -518,7 +539,7 @@ int main()
 	int const SPACE_BETWEEN_NUMBERS = 6;
 	int const FILENAME_MAX_SIZE = 10;
 	int const FILE_LINE_MAX_SIZE = 70;
-	char chosenOption[2];
+	char chosenOption[10];
 	do {
 		std::cout << "      MENU     " << '\n';
 		std::cout << "1. Start game\n";
@@ -528,6 +549,7 @@ int main()
 		char nickname[NICKNAME_MAX_LETTERS];
 		std::cin >> chosenOption;
 		IsChosenOptionValid(chosenOption);
+		std::cout << "\033[H\033[J";
 		char matrixDimension[2];
 		if (chosenOption[0] == '1') {
 			StartGame(nickname, matrixDimension, NICKNAME_MAX_LETTERS, FILE_LINE_MAX_SIZE, SPACE_BETWEEN_NUMBERS);
